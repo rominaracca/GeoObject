@@ -1,0 +1,44 @@
+{
+  "name": "GeoObject",
+  "version": "1.0.0",
+  "description": " Webservice REST para consultar continentes y paises ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rominaracca/GeoObject.git"
+  },
+  "keywords": [
+    "webservice",
+    "paises",
+    "pais",
+    "continentes",
+    "continente"
+  ],
+  "authors": [
+    {
+      "name": "Esteban U. Agüero",
+      "email": "esteban.u.aguero@gmail.com"
+    },
+    {
+      "name": "Romina C. Racca",
+      "email": "romina.racca@gmail.com"
+    },
+    {
+      "name": "Nelson M. Ríos",
+      "email": "nelsonmatias9@hotmail.com"
+    }
+  ],
+  "license": "GPLv3",
+  "bugs": {
+    "url": "https://github.com/rominaracca/GeoObject/issues"
+  },
+  "homepage": "https://github.com/rominaracca/GeoObject",
+  "dependencies": {
+    "pg.js": "^4.1.1",
+    "restify": "^3.0.3",
+    "uuid": "^2.0.1"
+  }
+}
