@@ -33,6 +33,80 @@ For these situations we use the 404 and 500 status codes to signify that a conti
 */
 
 
+/*GET countries by latitude and longitude*/
+server.get(
+    {path: /^\/([a-zA-Z0-9_\.~-]+)\/(.*)/, version:'1.0.0'},
+    function(req,res,next){
+
+      if(req.params[0] == 'countries'){
+
+        var array = req.params[1].split(",");
+
+        if(array.length == 2){
+
+          pg.connect(conString, function(err, client, done){
+            //Return if an error occurs
+            if(err) {
+              done(); //release the pg client back to the pool
+              console.error('error fetching client from pool', err);
+              res.send(500);
+              return;
+            }
+
+            //querying database
+            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, latitude, longitude, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND latitude=';
+              sql += "'" + array[0] + "' AND longitude=";
+              sql += "'" + array[1] + "'";
+            console.log(sql);
+
+            client.query(sql, function(err, result) {
+              done(); //release the pg client back to the pool 
+              //Return if an error occurs
+              if(err) {
+                console.error('error fetching client from pool', err);
+                res.send(500);
+                return;
+              }
+
+              if(!result.rows[0]) {
+                res.send(404);
+                return;
+              }
+              
+              var dto = {
+                id: result.rows[0].id,
+                code_iso_alfa2: result.rows[0].code_iso_alfa2,
+                code_iso_alfa3: result.rows[0].code_iso_alfa3,
+                code_iso_num: result.rows[0].code_iso_num,
+                name_iso: result.rows[0].name_iso,
+                common_name: result.rows[0].common_name,
+                comment: result.rows[0].comment,
+                citizenship: result.rows[0].citizenship,
+                latitude: result.rows[0].latitude,
+                longitude: result.rows[0].longitude,
+                entity: result.rows[0].entity,
+                entity_code_iso_alfa2: result.rows[0].entity_code_iso_alfa2,
+                _links: {
+                  country: {
+                    rel : 'self',
+                    href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+                    type: 'application/json'
+                  }
+                }
+              };
+              var model = {
+                "org.geoobject.model.Country" : dto
+              }
+              res.json(model);
+              res.send(200);
+            });//client.query
+          });
+        }//if =2
+        next();
+      }
+});
+
+
 /*GET list of continents.*/
 server.get(
    {path: '/continents', version:'1.0.0'}, 
@@ -388,6 +462,7 @@ server.get(
       });
     });
 });
+
 
 
 /************************* DELETE *************************/
