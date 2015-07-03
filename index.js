@@ -21,70 +21,30 @@ var conString = "postgres://" +
                config.pg.host + "/" + 
                config.pg.db;
 
-function validateLocale(localeParam){
-   
-   
-   var array = localeParam.split("-");
-   if (array.length != 2){
-      console.log("FALSE por array distinto a dos elementos");
-      return false;
-   }
 
-   pg.connect(conString, function(err, client, done){
-    //Return if an error occurs
-    if(err) {
-      //TODO respond with error code
-      console.error('error fetching client from pool', err);
-    }
+/************************* GET *************************/
+/*
+If the GET request is successful, the service will respond with a 200 OK status code and a representation of the state of the resource.
 
-    var sql_code = 'SELECT code FROM geo_object.ISO639_1 WHERE code=';
-      sql_code += "'" + array[0] + "'";
-    
-    client.query(sql_code, function(err, result){
+We’re only going to consider two failure cases for GET. 
+The first is where the client requests a continent that doesn’t exist, and 
+the second is where the server fails in an unspecified manner. 
+For these situations we use the 404 and 500 status codes to signify that a continent hasn’t been found or that the server failed, respectively.
+*/
 
-      //Return if an error occurs
-      if(err) {
-        console.error('error fetching client from pool', err);      
-      }
 
-      if(result.rowCount != 1){
-        done();
-        console.log("FALSE por cantidad de filas distinto de uno_A");
-        return false
-      }
-
-      var sql_language = 'SELECT code_iso_alfa2 FROM geo_object.country WHERE code_iso_alfa2=';
-      sql_language += "'" + array[1].toUpperCase() + "'";
-
-      client.query(sql_code, function(err, result){
-        
-        //Return if an error occurs
-        if(err) {
-          console.error('error fetching client from pool', err);      
-        }
-
-        if(result.rowCount != 1){
-          console.log("FALSE por cantidad de filas distinto de uno_B");
-          done();
-          return false
-        }
-        done();
-        console.log("TRUE");
-        return true;
-      });
-    });
-  });
-  return false;
-}
-
+/*GET list of continents.*/
 server.get(
    {path: '/continents', version:'1.0.0'}, 
    function(req,res){
       pg.connect(conString, function(err, client, done){
+      
       //Return if an error occurs
       if(err) {
-         //TODO respond with error code
-         console.error('error fetching client from pool', err);
+        done();
+        console.error('error fetching client from pool', err);
+        res.send(500);
+        return;
       }
 
       var sql_locale='SELECT DISTINCT locale FROM geo_object.continent ';
@@ -92,297 +52,357 @@ server.get(
 
       client.query(sql_locale, function(err, result){
 
-         //Return if an error occurs
-         if(err) {
-            console.error('error fetching client from pool', err);      
-         }
+        //Return if an error occurs
+        if(err) {
+          done();
+          console.error('error fetching client from pool', err);
+          res.send(500);
+          return;
+        }
 
-         result.rows.forEach(
-            function(data) {
-               responseLocaleArray.push(data.locale);          
-            }
-         );
+        result.rows.forEach(
+          function(data) {
+            responseLocaleArray.push(data.locale);
+          }
+        );
 
         // Header
         var locale = req.header('Accept-Language', 'es-AR');        //"es-AR" es el valor default en caso de ser null
         var languagesArray = locale.match(/[a-zA-z\-]{2,10}/g) || [];
         var resultDB = "";
         languagesArray.every(
-            function(dataLang){
-                responseLocaleArray.every(
-                    function(dataDB){
-                        if(dataLang.toUpperCase() == dataDB.toUpperCase()){
-                            resultDB = dataDB;
-                            return false;
-                        }
-                        return true;
-                    }
-                );
-                if(resultDB == "")
-                    return false;
-                else return true;
-            }
-        ); 
-        
-        console.log(resultDB);
-        console.log(locale);
+          function(dataLang){
+            responseLocaleArray.every(
+              function(dataDB){
+                if(dataLang.toUpperCase() == dataDB.toUpperCase()){
+                  resultDB = dataDB;
+                  return false;
+                }
+                return true;
+              }
+            );
+            if(resultDB == "")
+              return false;
+            else return true;
+          }
+        );
+
+        //console.log(resultDB);
+        //console.log(locale);
 
         if(resultDB == "") resultDB = "es-AR";
 
-    var sql = 'SELECT id, code, name, description, comment FROM geo_object.continent WHERE erased=false AND locale ilike ';
-    sql += "'" + resultDB + "'";
-    sql += " ORDER BY name";
+        var sql = 'SELECT id, code, name, description, comment FROM geo_object.continent WHERE erased=false AND locale ilike ';
+          sql += "'" + resultDB + "'";
+          sql += " ORDER BY name";
 
-
-          var responseArray = [];
-          client.query(sql, function(err, result) {
-             //Return if an error occurs
-             if(err) {
-                console.error('error fetching client from pool', err);      
-             }
-             // Storing result in an array
-             result.rows.forEach(
-                function(data) {
-                   var dto = {
-                      id: data.id,
-                      code: data.code,
-                      name: data.name,
-                      description: data.description,
-                      comment: data.comment,
-                      _links: {
-                         continent: {
-                            href: 'http://'+config.host+':'+ config.port + "/continents/" + data.code,
-                            type: 'application/json'
-                         }
-                      }
-                   };
-                   responseArray.push(dto);
-                }
-             );
-             done(); //release the pg client back to the pool 
-             var model = {
-                "org.geoobject.model.Continent": responseArray
-             };
-             res.json(model);
-          });
-
-      });
-   });
-});
-
-server.get(
-   {path: '/continents/:code', version:'1.0.0'}, 
-   function(req,res){
-      pg.connect(conString, function(err, client, done){
-      //Return if an error occurs
-      if(err) {
-         //TODO respond with error code
-         console.error('error fetching client from pool', err);
-      }
-      //querying database
-      var sql = 'SELECT id, code, name, description, comment FROM geo_object.continent WHERE erased=false AND code ilike ';
-      sql += "'" + req.params.code + "'";
-      sql += " ORDER BY name";
-
-      console.log(sql);
-      client.query(sql, function(err, result) {
-         //Return if an error occurs
-         if(err) {
-            console.error('error fetching client from pool', err);      
-         }
-          if(!result.rows[0]) 
+        var responseArray = [];
+        client.query(sql, function(err, result) {
+          done(); //release the pg client back to the pool 
+          //Return if an error occurs
+          if(err) {
+            console.error('error fetching client from pool', err);
+            res.send(500);
+            return;
+          }
+          if(!result.rows[0]){
             res.send(404);
-         else{
-            var dto = {
-               id: result.rows[0].id,
-               code: result.rows[0].code,
-               name: result.rows[0].name,
-               description: result.rows[0].description,
-               comment: result.rows[0].comment,
-               _links: {
-                  continent: {
-                     rel : 'self',
-                     href: 'http://'+config.host+':' + config.port + "/continents/" + result.rows[0].code,
-                     type: 'application/json'
-                  }
-               }
-            };
-            var model = {
-               "org.geoobject.model.Continent" : dto
-            }
-            res.json(model);
-         }
-         done(); //release the pg client back to the pool 
-      });
-   });
-});
-
-
-/*** Paises ***/
-server.get(
-   {path: '/countries', version:'1.0.0'}, 
-   function(req,res){
-      pg.connect(conString, function(err, client, done){
-      //Return if an error occurs
-      if(err) {
-         //TODO respond with error code
-         console.error('error fetching client from pool', err);
-      }
-      //querying database
-      var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false';
-      sql += " ORDER BY common_name";
-      var responseArray = [];
-      client.query(sql, function(err, result) {
-         //Return if an error occurs
-         if(err) {
-            console.error('error fetching client from pool', err);      
-         }
-         // Storing result in an array
-         result.rows.forEach(
+            return;
+          }
+          // Storing result in an array
+          result.rows.forEach(
             function(data) {
-               var dto = {
-                  id: data.id,
-                  code_iso_alfa2: data.code_iso_alfa2,
-                  code_iso_alfa3: data.code_iso_alfa3,
-                  code_iso_num: data.code_iso_num,
-                  name_iso: data.name_iso,
-                  common_name: data.common_name,
-                  comment: data.comment,
-                  citizenship: data.citizenship,
-                  entity: data.entity,
-                  entity_code_iso_alfa2: data.entity_code_iso_alfa2,
-                  _links: {
-                     country: {
-                        href: 'http://'+config.host+':'+ config.port + "/countries/" + data.code_iso_alfa3,
-                        type: 'application/json'
-                     }
-                  }
-               };
-               responseArray.push(dto);
-            }
-         );
-         done(); //release the pg client back to the pool 
-         var model = {
-            "org.geoobject.model.Country": responseArray
-         };
-         res.json(model);
-      });
-   });
-});
-
-
-
-server.get(
-   {path: '/countries/:code_iso_alfa3', version:'1.0.0'}, 
-   function(req,res){
-      pg.connect(conString, function(err, client, done){
-      //Return if an error occurs
-      if(err) {
-         //TODO respond with error code
-         console.error('error fetching client from pool', err);
-      }
-      //querying database
-      var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
-      sql += "'" + req.params.code_iso_alfa3 + "'";
-      sql += " ORDER BY common_name";
-      console.log(sql);
-      client.query(sql, function(err, result) {
-         //Return if an error occurs
-         if(err) {
-            console.error('error fetching client from pool', err);      
-         }
-          if(!result.rows[0]) 
-            res.send(404);
-         else{
-            var dto = {
-                id: result.rows[0].id,
-                code_iso_alfa2: result.rows[0].code_iso_alfa2,
-                code_iso_alfa3: result.rows[0].code_iso_alfa3,
-                code_iso_num: result.rows[0].code_iso_num,
-                name_iso: result.rows[0].name_iso,
-                common_name: result.rows[0].common_name,
-                comment: result.rows[0].comment,
-                citizenship: result.rows[0].citizenship,
-                entity: result.rows[0].entity,
-                entity_code_iso_alfa2: result.rows[0].entity_code_iso_alfa2,
+              var dto = {
+                id: data.id,
+                code: data.code,
+                name: data.name,
+                description: data.description,
+                comment: data.comment,
                 _links: {
-                    country: {
-                    rel : 'self',
-                    href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+                  continent: {
+                    href: 'http://'+config.host+':'+ config.port + "/continents/" + data.code,
                     type: 'application/json'
                   }
-               }
-            };
-            var model = {
-               "org.geoobject.model.Country" : dto
+                }
+              };
+              responseArray.push(dto);
             }
-            res.json(model);
-         }
-         done(); //release the pg client back to the pool 
+          );
+          var model = {
+            "org.geoobject.model.Continent": responseArray
+          };
+          res.json(model);
+          res.send(200);
+        });
       });
    });
 });
 
 
-
+/*GET continent by code.*/
 server.get(
-   {path: '/continents/:code/countries', version:'1.0.0'}, 
-   function(req,res){
+    {path: '/continents/:code', version:'1.0.0'}, 
+    function(req,res){
       pg.connect(conString, function(err, client, done){
       //Return if an error occurs
       if(err) {
-         //TODO respond with error code
-         console.error('error fetching client from pool', err);
+        done(); //release the pg client back to the pool
+        console.error('error fetching client from pool', err);
+        res.send(500);
+        return;
       }
+
+      //querying database
+      var sql = 'SELECT id, code, name, description, comment FROM geo_object.continent WHERE erased=false AND code ilike ';
+        sql += "'" + req.params.code + "'";
+        sql += " ORDER BY name";
+      console.log(sql);
+
+      client.query(sql, function(err, result) {
+        done(); //release the pg client back to the pool 
+        //Return if an error occurs
+        if(err) {
+          console.error('error fetching client from pool', err);
+          res.send(500);
+          return;
+        }
+
+        if(!result.rows[0]){
+          res.send(404);
+          return;
+        }
+        var dto = {
+          id: result.rows[0].id,
+          code: result.rows[0].code,
+          name: result.rows[0].name,
+          description: result.rows[0].description,
+          comment: result.rows[0].comment,
+          _links: {
+            continent: {
+              rel : 'self',
+              href: 'http://'+config.host+':' + config.port + "/continents/" + result.rows[0].code,
+              type: 'application/json'
+            }
+          }
+        };
+        var model = {
+          "org.geoobject.model.Continent" : dto
+        }
+        res.json(model);
+        res.send(200);
+      });
+    });
+});
+
+
+/*GET list of countries.*/
+server.get(
+    {path: '/countries', version:'1.0.0'}, 
+    function(req,res){
+      pg.connect(conString, function(err, client, done){
+        //Return if an error occurs
+        if(err) {
+          done(); //release the pg client back to the pool 
+          console.error('error fetching client from pool', err);
+          res.send(500);
+          return;
+        }
+
+        //querying database
+        var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false';
+          sql += " ORDER BY common_name";
+        var responseArray = [];
+        client.query(sql, function(err, result) {
+          done(); //release the pg client back to the pool 
+          if(err) {
+            console.error('error fetching client from pool', err);
+            res.send(500);
+            return;
+          }
+
+          if(!result.rows[0]){
+            res.send(404);
+            return;
+          }
+          // Storing result in an array
+          result.rows.forEach(
+            function(data) {
+              var dto = {
+                id: data.id,
+                code_iso_alfa2: data.code_iso_alfa2,
+                code_iso_alfa3: data.code_iso_alfa3,
+                code_iso_num: data.code_iso_num,
+                name_iso: data.name_iso,
+                common_name: data.common_name,
+                comment: data.comment,
+                citizenship: data.citizenship,
+                entity: data.entity,
+                entity_code_iso_alfa2: data.entity_code_iso_alfa2,
+                _links: {
+                  country: {
+                    href: 'http://'+config.host+':'+ config.port + "/countries/" + data.code_iso_alfa3,
+                    type: 'application/json'
+                  }
+                }
+              };
+              responseArray.push(dto);
+            }
+          );
+          var model = {
+            "org.geoobject.model.Country": responseArray
+          };
+          res.json(model);
+          res.send(200);
+        });
+    });
+});
+
+
+/*GET country by code_iso_alfa3.*/
+server.get(
+    {path: '/countries/:code_iso_alfa3', version:'1.0.0'}, 
+    function(req,res){
+      pg.connect(conString, function(err, client, done){
+      //Return if an error occurs
+      if(err) {
+        done(); //release the pg client back to the pool 
+        console.error('error fetching client from pool', err);
+        res.send(500);
+        return;
+      }
+
+      //querying database
+      var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
+        sql += "'" + req.params.code_iso_alfa3 + "'";
+        sql += " ORDER BY common_name";
+      console.log(sql);
+
+      client.query(sql, function(err, result) {
+        done(); //release the pg client back to the pool 
+        //Return if an error occurs
+        if(err) {
+          console.error('error fetching client from pool', err);
+          res.send(500);
+          return;
+        }
+
+        if(!result.rows[0]) {
+          res.send(404);
+          return;
+        }
+        var dto = {
+          id: result.rows[0].id,
+          code_iso_alfa2: result.rows[0].code_iso_alfa2,
+          code_iso_alfa3: result.rows[0].code_iso_alfa3,
+          code_iso_num: result.rows[0].code_iso_num,
+          name_iso: result.rows[0].name_iso,
+          common_name: result.rows[0].common_name,
+          comment: result.rows[0].comment,
+          citizenship: result.rows[0].citizenship,
+          entity: result.rows[0].entity,
+          entity_code_iso_alfa2: result.rows[0].entity_code_iso_alfa2,
+          _links: {
+            country: {
+              rel : 'self',
+              href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+              type: 'application/json'
+            }
+          }
+        };
+        var model = {
+          "org.geoobject.model.Country" : dto
+        }
+        res.json(model);
+        res.send(200);
+      });
+   });
+});
+
+
+/*GET the countries of a continent(code)*/
+server.get(
+    {path: '/continents/:code/countries', version:'1.0.0'}, 
+    function(req,res){
+      pg.connect(conString, function(err, client, done){
+      //Return if an error occurs
+      if(err) {
+        done(); //release the pg client back to the pool 
+        console.error('error fetching client from pool', err);
+        res.send(500);
+        return;
+      }
+
       //querying database
       var sql = 'SELECT country.id, country.code_iso_alfa2, country.code_iso_alfa3, country.code_iso_num, country.name_iso, country.common_name, country.comment, country.citizenship, country.entity, country.entity_code_iso_alfa2 FROM geo_object.country country LEFT JOIN geo_object.continent continent ON country.continent_id = continent.id WHERE country.erased=false AND continent.code ilike ';
         sql += "'" + req.params.code + "'";
         sql += " ORDER BY common_name";
       var responseArray = [];
+
       client.query(sql, function(err, result) {
-         //Return if an error occurs
-         if(err) {
-            console.error('error fetching client from pool', err);      
-         }
-         // Storing result in an array
-         result.rows.forEach(
-            function(data) {
-               var dto = {
-                  id: data.id,
-                  code_iso_alfa2: data.code_iso_alfa2,
-                  code_iso_alfa3: data.code_iso_alfa3,
-                  code_iso_num: data.code_iso_num,
-                  name_iso: data.name_iso,
-                  common_name: data.common_name,
-                  comment: data.comment,
-                  citizenship: data.citizenship,
-                  entity: data.entity,
-                  entity_code_iso_alfa2: data.entity_code_iso_alfa2,
-                  name: data.name,
-                  _links: {
-                     continent: {
-                        href: 'http://'+config.host+':' + config.port + "/continents/" + req.params.code,
-                        type: 'application/json'
-                     },
-                     country: {
-                        href: 'http://'+config.host+':' + config.port + "/countries/" + data.code_iso_alfa3,
-                        type: 'application/json'
-                     }
-                  }
-               };
-               responseArray.push(dto);
-            }
-         );
-         done(); //release the pg client back to the pool 
-         var model = {
-            "org.geoobject.model.Country": responseArray
-         };
-         res.json(model);
+        done(); //release the pg client back to the pool 
+        //Return if an error occurs
+        if(err) {
+          console.error('error fetching client from pool', err);
+          res.send(500);
+          return;
+        }
+
+        if(!result.rows[0]) {
+          res.send(404);
+          return;
+        }
+        // Storing result in an array
+        result.rows.forEach(
+          function(data) {
+            var dto = {
+              id: data.id,
+              code_iso_alfa2: data.code_iso_alfa2,
+              code_iso_alfa3: data.code_iso_alfa3,
+              code_iso_num: data.code_iso_num,
+              name_iso: data.name_iso,
+              common_name: data.common_name,
+              comment: data.comment,
+              citizenship: data.citizenship,
+              entity: data.entity,
+              entity_code_iso_alfa2: data.entity_code_iso_alfa2,
+              name: data.name,
+              _links: {
+                continent: {
+                  href: 'http://'+config.host+':' + config.port + "/continents/" + req.params.code,
+                  type: 'application/json'
+                },
+                country: {
+                  href: 'http://'+config.host+':' + config.port + "/countries/" + data.code_iso_alfa3,
+                  type: 'application/json'
+                }
+              }
+            };
+            responseArray.push(dto);
+          }
+        );
+        var model = {
+          "org.geoobject.model.Country": responseArray
+        };
+        res.json(model);
+        res.send(200);
       });
-   });
+    });
 });
 
 
+/************************* DELETE *************************/
+/*
+If the GET request is successful, the service will respond with a 204 No Content status code.
+
+If it can’t be deleted, a 405 Method Not Allowed response would be used.
+
+If the client has specified a URI that the server cannot map to a "continent", a 404 Not Found response would be used.
+
+If the service is unavailable to respond to our DELETE request for some other reason, 
+the client can expect a 503 Service Unavailable response and might try the request again later.
+*/
+
+/* Remove continent by code*/
 server.del(
     {path: '/continents/:code', version:'1.0.0'},
     function(req,res){
@@ -390,8 +410,10 @@ server.del(
 
         //Return if an error occurs
         if(err) {
+          done(); //release the pg client back to the pool 
           console.error('error fetching client from pool', err);
           res.send(503);
+          return;
         }
 
         //querying database
@@ -400,10 +422,9 @@ server.del(
           sql += " AND locale ilike '" + req.header('Accept-Language') +"'";
 
         client.query(sql, function(err, result) {
-          done();
+          done(); //release the pg client back to the pool 
           //Return if an error occurs
-          if(err) {
-            //falta de conexion
+          if(err) {//falta de conexion
             console.error('error fetching client from pool', err);
             res.send(503);
           }
@@ -411,7 +432,7 @@ server.del(
             console.error('result not found', err);
             res.send(404);
           }else{
-            res.send(200);
+            res.send(204);
           }
         });
       });
@@ -419,10 +440,19 @@ server.del(
 );
 
 
+/************************* CREATE *************************/
+/*
+If the POST request succeeds, the server creates an order resource. It then generates an HTTP response with a status code of 201 Created.
+
+400 Bad Request , when the client sends a malformed request to the service.
+
+500 Internal Server Error , for those rare cases where the server faults and cannot recover internally.
+*/
+
+/*Create a new continent*/
 server.post(
     {path: '/continents', version:'1.0.0'},
     function(req, res){
-      //console.log(req.body);
 
       if(!req.body){
         res.send(400, "falta dato obligatorio");
@@ -434,12 +464,10 @@ server.post(
         return;
       }
 
-       req.body = JSON.parse(req.body);
+      req.body = JSON.parse(req.body);
 
-      //console.log(req.header('Accept-Language'));
       var locale = req.header('Accept-Language')
       var languagesArray = locale.match(/[a-zA-z\-]{2,10}/g) || [];
-      
       var array = languagesArray[0].split("-");
       if (array.length != 2){
         res.send(400, "Locale incorrecto"+array);
@@ -447,11 +475,10 @@ server.post(
       }
 
       pg.connect(conString, function(err, client, done){
-
         //Return if an error occurs
         if(err) {
           done();
-          res.send(503);
+          res.send(500);
           console.error('error fetching client from pool', err);
           return;
         }
@@ -460,7 +487,6 @@ server.post(
           sql_code += "'" + array[0] + "'";
 
         client.query(sql_code, function(err, result){
-
           //Return if an error occurs
           if(err) {
             done();
@@ -472,7 +498,6 @@ server.post(
           if(result.rowCount != 1){
             done();
             res.send(400, "Locale codogo incorrecto"+array);
-            console.log("FALSE por cantidad de filas distinto de uno_A");
             return;
           }
 
@@ -480,7 +505,6 @@ server.post(
             sql_language += "'" + array[1].toUpperCase() + "'";
 
           client.query(sql_code, function(err, result){
-        
             //Return if an error occurs
             if(err) {
               done();
@@ -491,7 +515,6 @@ server.post(
 
             if(result.rowCount != 1){
               done();
-              console.log("FALSE por cantidad de filas distinto de uno_B");
               res.send(400, "Locale lenguaje incorrecto"+array);
               return;
             }
@@ -506,13 +529,11 @@ server.post(
               done();
 
               //Return if an error occurs
-              if(err) {
-                //falta de conexion
+              if(err) {//falta de conexion
                 console.error('error fetching client from pool', err);
                 res.send(503);
                 return;
               }
-
               res.send(201);
             });
           });
@@ -522,13 +543,29 @@ server.post(
 );  
 
 
+/************************* UPDATE *************************/
+/*
+When the PUT request is accepted and processed by the service, 
+the consumer will receive either a 200 OK response or a 204 No Content response.
+
+200  with a response body is more descriptive and actively confirms the server-side state, 
+while 204 is more efficient since it returns no representation and indicates that the server has accepted the request representation verbatim.
+
+If a request has failed because of incompatible state. 
+To signal conflicting state to the client, the service responds with a 409 Conflict status code.
+
+In keeping with the HTTP specification, the response body includes enough information for the client to understand and 
+potentially fix the problem, if at all possible.
+
+500 Internal Server Error response code is equally straight-forward when using PUT simply wait and retry.
+*/
+
+/*Create a new continent (code and locale)*/
 server.put(
     {path: '/continents/:code', version:'1.0.0'},
     function(req, res){
-    //name, description, comment
 
-      //409 Conflict - Una solicitud ha fallado debido estado incompatible
-      //El cuerpo de la respuesta incluye información suficiente para que el cliente pueda entender y potencialmente solucionar el problema, si es posible.
+
        if(!req.body){
         res.send(409, "Conflict");
         return;
@@ -538,43 +575,42 @@ server.put(
 
         //Return if an error occurs
         if(err) {
+          done();
           console.error('error fetching client from pool', err);
           res.send(500);
+          return;
         }
 
         req.body = JSON.parse(req.body);
 
         //querying database
         var sql = 'UPDATE geo_object.continent SET ';
-          if(!!req.body.name){ //si viene un nombre
+          if(!!req.body.name){ //It has a name
             sql += "name='" + req.body.name + "' ";
           }
-          if(!!req.body.description){ //si viene un nombre
+          if(!!req.body.description){ //It has a description
             sql += "description='" + req.body.description + "' ";
           }
-          if(!!req.body.comment){ //si viene un nombre
+          if(!!req.body.comment){ //It has a comment
             sql += "comment='" + req.body.comment + "' ";
           }
             sql += "WHERE code='" + req.params.code + "'";
-
-        //UPDATE geo_object.continent SET name='Prueba' WHERE code='TT';
         console.log(sql);
 
         client.query(sql, function(err, result) {
           done();
           //Return if an error occurs
-          if(err) {
-            //falta de conexion
+          if(err) { //falta de conexion
             console.error('error fetching client from pool', err);
             res.send(500);
             return;
           }
           if (result.rowCount == 0) {
             console.error('not found', err);
-            res.send(404);  //quiero actualizar algo que no existe
+            res.send(404);  //Update something that does not exist.
             return;
           }else{
-            res.send(204); //respuesta 200 ok/204 not content 
+            res.send(204);
           }
         });
       });
