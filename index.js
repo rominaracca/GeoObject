@@ -260,7 +260,7 @@ server.get(
 
 
 /*GET country by code_iso_alfa3.*/
-server.get(
+/*server.get(
     {path: '/countries/:code_iso_alfa3', version:'1.0.0'}, 
     function(req,res,next){
       console.log("el code");
@@ -319,7 +319,7 @@ server.get(
       });
    });
 });
-
+*/
 
 /*GET the countries of a continent(code)*/
 server.get(
@@ -391,7 +391,7 @@ server.get(
     });
 });
 
-/*GET countries by latitude and longitude*/
+/*GET countries by latitude,longitude OR code_iso_alfa3*/
 server.get(
     {path: /^\/([a-zA-Z0-9_\.~-]+)\/(.*)/, version:'1.0.0'},
     function(req,res,next){
@@ -400,7 +400,7 @@ server.get(
 
         var array = req.params[1].split(",");
 
-        if(array.length == 2){
+        if(array.length == 2){  /*GET countries by latitude and longitude*/
 
           pg.connect(conString, function(err, client, done){
             //Return if an error occurs
@@ -461,10 +461,64 @@ server.get(
             });//client.query
           });
         }//if=2
-        console.log("le next");
+        else{   /*GET country by code_iso_alfa3*/
+          pg.connect(conString, function(err, client, done){
+            //Return if an error occurs
+            if(err) {
+              done(); //release the pg client back to the pool 
+              console.error('error fetching client from pool', err);
+              res.send(500);
+              return next();
+            }
+
+            //querying database
+            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
+              sql += "'" + req.params[1] + "'";
+              sql += " ORDER BY common_name";
+            console.log(sql);
+
+            client.query(sql, function(err, result) {
+              done(); //release the pg client back to the pool 
+              //Return if an error occurs
+              if(err) {
+                console.error('error fetching client from pool', err);
+                res.send(500);
+                return next();
+              }
+
+              if(!result.rows[0]) {
+                res.send(404);
+                return next();
+              }
+              var dto = {
+                id: result.rows[0].id,
+                code_iso_alfa2: result.rows[0].code_iso_alfa2,
+                code_iso_alfa3: result.rows[0].code_iso_alfa3,
+                code_iso_num: result.rows[0].code_iso_num,
+                name_iso: result.rows[0].name_iso,
+                common_name: result.rows[0].common_name,
+                comment: result.rows[0].comment,
+                citizenship: result.rows[0].citizenship,
+                entity: result.rows[0].entity,
+                entity_code_iso_alfa2: result.rows[0].entity_code_iso_alfa2,
+                _links: {
+                  country: {
+                    rel : 'self',
+                    href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+                    type: 'application/json'
+                  }
+                }
+              };
+              var model = {
+                "org.geoobject.model.Country" : dto
+              }
+              res.json(model);
+              res.send(200);
+            });
+          });
+        }//fin else
         return next();
       }
-      console.log("le other next"); 
       return next();
 });
 
