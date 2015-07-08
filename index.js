@@ -56,7 +56,7 @@ server.get(
         if(err) {
           done();
           console.error('error fetching client from pool', err);
-          res.send(500);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
@@ -102,11 +102,11 @@ server.get(
           //Return if an error occurs
           if(err) {
             console.error('error fetching client from pool', err);
-            res.send(500);
+            res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
             return next();
           }
           if(!result.rows[0]){
-            res.send(404);
+            res.send(404, {code: 404, message: 'Not Found', description: 'Continent not found.'});
             return next();
           }
           // Storing result in an array
@@ -148,7 +148,7 @@ server.get(
       if(err) {
         done(); //release the pg client back to the pool
         console.error('error fetching client from pool', err);
-        res.send(500);
+        res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
         return next();
       }
 
@@ -163,12 +163,12 @@ server.get(
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
-          res.send(500);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
         if(!result.rows[0]){
-          res.send(404);
+          res.send(404, {code: 404, message: 'Not Found', description: 'Continent not found.'});
           return next();
         }
         var dto = {
@@ -204,7 +204,7 @@ server.get(
         if(err) {
           done(); //release the pg client back to the pool 
           console.error('error fetching client from pool', err);
-          res.send(500);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
@@ -216,12 +216,12 @@ server.get(
           done(); //release the pg client back to the pool 
           if(err) {
             console.error('error fetching client from pool', err);
-            res.send(500);
+            res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
             return next();
           }
 
           if(!result.rows[0]){
-            res.send(404);
+            res.send(404, {code: 404, message: 'Not Found', description: 'Countries not found.'});
             return next();
           }
           // Storing result in an array
@@ -329,7 +329,7 @@ server.get(
       if(err) {
         done(); //release the pg client back to the pool 
         console.error('error fetching client from pool', err);
-        res.send(500);
+        res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
         return next();
       }
 
@@ -344,12 +344,12 @@ server.get(
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
-          res.send(500);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
         if(!result.rows[0]) {
-          res.send(404);
+          res.send(404, {code: 404, message: 'Not Found', description: 'Countries not found.'});
           return next();
         }
         // Storing result in an array
@@ -406,7 +406,7 @@ server.get(
             if(err) {
               done(); //release the pg client back to the pool
               console.error('error fetching client from pool', err);
-              res.send(500);
+              res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
               return next();
             }
 
@@ -421,12 +421,12 @@ server.get(
               //Return if an error occurs
               if(err) {
                 console.error('error fetching client from pool', err);
-                res.send(500);
+                res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
                 return next();
               }
 
               if(!result.rows[0]) {
-                res.send(404);
+                res.send(404, {code: 404, message: 'Not Found', description: 'Country not found.'});
                 return next();
               }
               
@@ -466,7 +466,7 @@ server.get(
             if(err) {
               done(); //release the pg client back to the pool 
               console.error('error fetching client from pool', err);
-              res.send(500);
+              res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
               return next();
             }
 
@@ -481,12 +481,12 @@ server.get(
               //Return if an error occurs
               if(err) {
                 console.error('error fetching client from pool', err);
-                res.send(500);
+                res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
                 return next();
               }
 
               if(!result.rows[0]) {
-                res.send(404);
+                res.send(404, {code: 404, message: 'Not Found', description: 'Country not found.'});
                 return next();
               }
               var dto = {
@@ -544,7 +544,7 @@ server.del(
         if(err) {
           done(); //release the pg client back to the pool 
           console.error('error fetching client from pool', err);
-          res.send(503);
+          res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
@@ -558,12 +558,12 @@ server.del(
           //Return if an error occurs
           if(err) {//falta de conexion
             console.error('error fetching client from pool', err);
-            res.send(503);
+            res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
             return next();
           }
           if (result.rowCount == 0) {
             console.error('result not found', err);
-            res.send(404);
+            res.send(404, {code: 404, message: 'Not Found', description: 'Delete something that does not exist'});
             return next();
           }else{
             res.send(204);
@@ -589,20 +589,20 @@ server.post(
     function(req,res,next){
 
       if(!req.body){
-        res.send(400, "Empty body");
+        res.send(400, {code: 400, message: 'Bad Request', description: 'Empty body. Body format... {\"name\":\"nameTest\", \"code\":\"codeTest\"}'});
         return next();
       }
 
       if(!req.header('Accept-Language')){
-        res.send(400, "Required header: Accept-Language");
+        res.send(400, {code: 400, message: 'Bad Request', description: 'Required header Accept-Language'});
         return next();
       }
       if(!req.body.code){
-        res.send(400, "Required body: code");
+        res.send(400, {code: 400, message: 'Bad Request', description: 'Required body CODE'});
         return next();
       }
       if(!req.body.name){
-        res.send(400, "Required body: name");
+        res.send(400, {code: 400, message: 'Bad Request', description: 'Required body NAME'});
         return next();
       }
 
@@ -612,7 +612,7 @@ server.post(
       var languagesArray = locale.match(/[a-zA-z\-]{2,10}/g) || [];
       var array = languagesArray[0].split("-");
       if (array.length != 2){
-        res.send(400, "Accept-Language: invalid " + array);
+        res.send(400, {code: 400, message: 'Bad Request', description: 'Accept-Language header. Invalid ' + array});
         return next();
       }
 
@@ -620,8 +620,8 @@ server.post(
         //Return if an error occurs
         if(err) {
           done();
-          res.send(500, err);
           console.error('error fetching client from pool', err);
+          res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
@@ -632,14 +632,14 @@ server.post(
           //Return if an error occurs
           if(err) {
             done();
-            res.send(503, err);
             console.error('error fetching client from pool', err);
+            res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
             return next();
           }
 
           if(result.rowCount != 1){
             done();
-            res.send(400, "Accept-Language: invalid code."+array);
+            res.send(400, {code: 400, message: 'Bad Request', description: 'Accept-Language header. Invalid code' + array});
             return next();
           }
 
@@ -651,13 +651,13 @@ server.post(
             if(err) {
               done();
               console.error('error fetching client from pool', err);
-              res.send(503, err);
+              res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
               return next();
             }
 
             if(result.rowCount != 1){
               done();
-              res.send(400, "Accept-Language: invalid language" + array);
+              res.send(400, {code: 400, message: 'Bad Request', description: 'Accept-Language header. Invalid language' + array});
               return next();
             }
 
@@ -683,7 +683,7 @@ server.post(
               //Return if an error occurs
               if(err) {//falta de conexion
                 console.error('error fetching client from pool', err);
-                res.send(503, err);
+                res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
                 return next();
               }
               res.header('Location', 'http://'+config.host+':' + config.port + '/continents/' + req.body.code);
@@ -718,9 +718,8 @@ server.put(
     {path: '/continents/:code', version:'1.0.0'},
     function(req,res,next){
 
-
-       if(!req.body){
-        res.send(409, "Conflict");
+      if(!req.body){
+        res.send(409, {code: 409, message: 'Conflict', description: 'Empty body'});
         return next();
       }
 
@@ -730,24 +729,25 @@ server.put(
         if(err) {
           done();
           console.error('error fetching client from pool', err);
-          res.send(500);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
         }
 
-        req.body = JSON.parse(req.body);
+      //req.body = JSON.parse(req.body); //habilitar esta linea si el cliente envia un string y no un JSON
 
         //querying database
         var sql = 'UPDATE geo_object.continent SET ';
           if(!!req.body.name){ //It has a name
-            sql += "name='" + req.body.name + "' ";
+            sql += "name='" + req.body.name + "',";
           }
           if(!!req.body.description){ //It has a description
-            sql += "description='" + req.body.description + "' ";
+            sql += "description='" + req.body.description + "',";
           }
           if(!!req.body.comment){ //It has a comment
-            sql += "comment='" + req.body.comment + "' ";
+            sql += "comment='" + req.body.comment + "',";
           }
-            sql += "WHERE code='" + req.params.code + "'";
+          sql = sql.substring(0, sql.length - 1);
+            sql += " WHERE code='" + req.params.code + "'";
         console.log(sql);
 
         client.query(sql, function(err, result) {
@@ -755,12 +755,12 @@ server.put(
           //Return if an error occurs
           if(err) { //falta de conexion
             console.error('error fetching client from pool', err);
-            res.send(500);
+            res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
             return next();
           }
           if (result.rowCount == 0) {
             console.error('not found', err);
-            res.send(404);  //Update something that does not exist.
+            res.send(404, {code: 404, message: 'Not Found', description: 'Update something that does not exist'});
             return next();
           }else{
             res.send(204);
@@ -769,8 +769,6 @@ server.put(
       });
     }
 );
-
-
 
 server.listen(config.port);
 console.log("GeoObject Listening on port " + config.port);
