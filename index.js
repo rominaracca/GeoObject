@@ -37,7 +37,6 @@ For these situations we use the 404 and 500 status codes to signify that a conti
 server.get(
    {path: '/continents', version:'1.0.0'}, 
    function(req,res,next){
-    console.log("Le continent");
       pg.connect(conString, function(err, client, done){
       
       //Return if an error occurs
@@ -590,7 +589,7 @@ server.post(
     function(req,res,next){
 
       if(!req.body){
-        res.send(400, "falta dato obligatorio");
+        res.send(400, "body vacio");
         return next();
       }
 
@@ -599,7 +598,7 @@ server.post(
         return next();
       }
 
-      req.body = JSON.parse(req.body);
+      //req.body = JSON.parse(req.body); //habilitar esta linea si el cliente envia un string y no un JSON
 
       var locale = req.header('Accept-Language')
       var languagesArray = locale.match(/[a-zA-z\-]{2,10}/g) || [];
@@ -613,7 +612,7 @@ server.post(
         //Return if an error occurs
         if(err) {
           done();
-          res.send(500);
+          res.send(500, err);
           console.error('error fetching client from pool', err);
           return next();
         }
@@ -625,14 +624,14 @@ server.post(
           //Return if an error occurs
           if(err) {
             done();
-            res.send(503);
+            res.send(503, err);
             console.error('error fetching client from pool', err);
             return next();
           }
 
           if(result.rowCount != 1){
             done();
-            res.send(400, "Locale codogo incorrecto"+array);
+            res.send(400, "Locale codigo incorrecto"+array);
             return next();
           }
 
@@ -644,7 +643,7 @@ server.post(
             if(err) {
               done();
               console.error('error fetching client from pool', err);
-              res.send(503);
+              res.send(503, err);
               return next();
             }
 
@@ -666,9 +665,10 @@ server.post(
               //Return if an error occurs
               if(err) {//falta de conexion
                 console.error('error fetching client from pool', err);
-                res.send(503);
+                res.send(503, err);
                 return next();
               }
+              res.header('Location', 'http://'+config.host+':' + config.port + '/continents/' + req.body.code);
               res.send(201);
             });
           });
