@@ -589,12 +589,20 @@ server.post(
     function(req,res,next){
 
       if(!req.body){
-        res.send(400, "body vacio");
+        res.send(400, "Empty body");
         return next();
       }
 
-      if(!req.header('Accept-Language') || !req.body.code || !req.body.name){
-        res.send(400, "falta dato obligatorio");
+      if(!req.header('Accept-Language')){
+        res.send(400, "Required header: Accept-Language");
+        return next();
+      }
+      if(!req.body.code){
+        res.send(400, "Required body: code");
+        return next();
+      }
+      if(!req.body.name){
+        res.send(400, "Required body: name");
         return next();
       }
 
@@ -604,7 +612,7 @@ server.post(
       var languagesArray = locale.match(/[a-zA-z\-]{2,10}/g) || [];
       var array = languagesArray[0].split("-");
       if (array.length != 2){
-        res.send(400, "Locale incorrecto"+array);
+        res.send(400, "Accept-Language: invalid " + array);
         return next();
       }
 
@@ -631,14 +639,14 @@ server.post(
 
           if(result.rowCount != 1){
             done();
-            res.send(400, "Locale codigo incorrecto"+array);
+            res.send(400, "Accept-Language: invalid code."+array);
             return next();
           }
 
           var sql_language = 'SELECT code_iso_alfa2 FROM geo_object.country WHERE code_iso_alfa2=';
             sql_language += "'" + array[1].toUpperCase() + "'";
 
-          client.query(sql_code, function(err, result){
+          client.query(sql_language, function(err, result){
             //Return if an error occurs
             if(err) {
               done();
@@ -649,19 +657,29 @@ server.post(
 
             if(result.rowCount != 1){
               done();
-              res.send(400, "Locale lenguaje incorrecto"+array);
+              res.send(400, "Accept-Language: invalid language" + array);
               return next();
             }
 
             //querying database
             var sql = 'INSERT INTO geo_object.continent VALUES ('+"'"+ uuid.v4() +"'"+', false, ';
-              sql += "'" + req.body.code + "', '" + req.body.name + "', '" +  req.body.description + "', '" + req.body.comment +"', '"+ languagesArray[0] + "')";
+              sql += "'" + req.body.code + "', '" + req.body.name + "', ";
+              if(!!req.body.description){
+                sql += "'" + req.body.description + "', ";
+              }else{
+                sql += "' ', ";
+              }
+              if(!!req.body.comment){
+                sql += "'" + req.body.comment + "', ";
+              }else{
+                sql += "' ', ";
+              }
+              sql += "'" + languagesArray[0] + "')";
 
             console.log(sql);
 
             client.query(sql, function(err, result) {
               done();
-
               //Return if an error occurs
               if(err) {//falta de conexion
                 console.error('error fetching client from pool', err);
