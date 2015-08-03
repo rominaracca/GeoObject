@@ -5,9 +5,13 @@ var uuid    = require('uuid');
 
 var server = restify.createServer();
 
+var corsOptions={
+        headers : [ "location"]
+}
+server.use(restify.CORS(corsOptions));
 // No 'Access-Control-Allow-Origin' header is present on the requested resource. 
 // Origin 'http://localhost:9000' is therefore not allowed access. 
-server.use(restify.CORS()); 
+
 server.use(restify.fullResponse());
 server.use(restify.bodyParser());
 
