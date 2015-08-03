@@ -390,6 +390,188 @@ server.get(
     });
 });
 
+
+/*GET list of provinces.*/
+server.get(
+    {path: '/provinces', version:'1.0.0'}, 
+    function(req,res,next){
+      pg.connect(conString, function(err, client, done){
+        //Return if an error occurs
+        if(err) {
+          done(); //release the pg client back to the pool 
+          console.error('error fetching client from pool', err);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+          return next();
+        }
+
+        //querying database
+        var sql = 'SELECT id, code_iso, name, description, comment FROM geo_object.province WHERE erased=false ORDER BY name';
+
+        var responseArray = [];
+        client.query(sql, function(err, result) {
+          done(); //release the pg client back to the pool 
+          if(err) {
+            console.error('error fetching client from pool', err);
+            res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+            return next();
+          }
+
+          if(!result.rows[0]){
+            res.send(404, {code: 404, message: 'Not Found', description: 'Countries not found.'});
+            return next();
+          }
+          // Storing result in an array
+          result.rows.forEach(
+            function(data) {
+              var dto = {
+                id: data.id,
+                code_iso: data.code_iso,
+                name: data.name,
+                description: data.description,
+                comment: data.comment,
+                _links: {
+                  province: {
+                    href: 'http://'+config.host+':'+ config.port + "/provinces/" + data.code_iso,
+                    type: 'application/json'
+                  }
+                }
+              };
+              responseArray.push(dto);
+            }
+          );
+          var model = {
+            "org.geoobject.model.Province": responseArray
+          };
+          res.json(model);
+          res.send(200);
+        });
+    });
+});
+
+
+/*GET province by code.*/
+server.get(
+    {path: '/provinces/:code', version:'1.0.0'}, 
+    function(req,res,next){
+      pg.connect(conString, function(err, client, done){
+      //Return if an error occurs
+      if(err) {
+        done(); //release the pg client back to the pool
+        console.error('error fetching client from pool', err);
+        res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+        return next();
+      }
+
+      //querying database
+      var sql = 'SELECT id, code_iso, name, description, comment FROM geo_object.province WHERE erased=false AND code_iso ilike ';
+        sql += "'" + req.params.code + "'";
+      console.log(sql);
+
+      client.query(sql, function(err, result) {
+        done(); //release the pg client back to the pool 
+        //Return if an error occurs
+        if(err) {
+          console.error('error fetching client from pool', err);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+          return next();
+        }
+
+        if(!result.rows[0]){
+          res.send(404, {code: 404, message: 'Not Found', description: 'Province not found.'});
+          return next();
+        }
+        var dto = {
+          id: result.rows[0].id,
+          code_iso: result.rows[0].code_iso,
+          name: result.rows[0].name,
+          description: result.rows[0].description,
+          comment: result.rows[0].comment,
+          _links: {
+            continent: {
+              rel : 'self',
+              href: 'http://'+config.host+':' + config.port + "/provinces/" + result.rows[0].code_iso,
+              type: 'application/json'
+            }
+          }
+        };
+        var model = {
+          "org.geoobject.model.Province" : dto
+        }
+        res.json(model);
+        res.send(200);
+      });
+    });
+});
+
+
+/*GET list provinces of a country(code)*/
+server.get(
+    {path: '/countries/:code/provinces', version:'1.0.0'}, 
+    function(req,res,next){
+      pg.connect(conString, function(err, client, done){
+      //Return if an error occurs
+      if(err) {
+        done(); //release the pg client back to the pool 
+        console.error('error fetching client from pool', err);
+        res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+        return next();
+      }
+
+      //querying database
+      var sql = 'SELECT province.id, province.code_iso, province.name, province.description, province.comment FROM geo_object.province province LEFT JOIN geo_object.country country ON province.country_id = country.id WHERE province.erased=false AND country.code_iso_alfa3 ilike ';
+        sql += "'" + req.params.code + "'";
+        sql += " ORDER BY name";
+
+      var responseArray = [];
+
+      client.query(sql, function(err, result) {
+        done(); //release the pg client back to the pool 
+        //Return if an error occurs
+        if(err) {
+          console.error('error fetching client from pool', err);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+          return next();
+        }
+
+        if(!result.rows[0]) {
+          res.send(404, {code: 404, message: 'Not Found', description: 'Countries not found.'});
+          return next();
+        }
+        // Storing result in an array
+        result.rows.forEach(
+          function(data) {
+            var dto = {
+              id: data.id,
+              code_iso: data.code_iso,
+              name: data.name,
+              description: data.description,
+              comment: data.comment,
+              _links: {
+                country: {
+                  href: 'http://'+config.host+':' + config.port + "/countries/" + req.params.code,
+                  type: 'application/json'
+                },
+                province: {
+                  href: 'http://'+config.host+':' + config.port + "/provinces/" + data.code_iso,
+                  type: 'application/json'
+                }
+              }
+            };
+            responseArray.push(dto);
+          }
+        );
+        var model = {
+          "org.geoobject.model.Province": responseArray
+        };
+        res.json(model);
+        res.send(200);
+      });
+    });
+});
+
+
+
+
 /*GET countries by latitude,longitude OR code_iso_alfa3*/
 server.get(
     {path: /^\/([a-zA-Z0-9_\.~-]+)\/(.*)/, version:'1.0.0'},
@@ -771,4 +953,4 @@ server.put(
 );
 
 server.listen(config.port);
-console.log("GeoObject Listening on port " + config.port);
+console.log("GeoObject Listening on port: " + config.port + " Host: " +config.host);
