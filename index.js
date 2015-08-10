@@ -213,7 +213,7 @@ server.get(
         }
 
         //querying database
-        var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false';
+        var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false';
           sql += " ORDER BY common_name";
         var responseArray = [];
         client.query(sql, function(err, result) {
@@ -240,6 +240,7 @@ server.get(
                 common_name: data.common_name,
                 comment: data.comment,
                 citizenship: data.citizenship,
+                phone_code: data.phone_code,
                 entity: data.entity,
                 entity_code_iso_alfa2: data.entity_code_iso_alfa2,
                 _links: {
@@ -338,7 +339,7 @@ server.get(
       }
 
       //querying database
-      var sql = 'SELECT country.id, country.code_iso_alfa2, country.code_iso_alfa3, country.code_iso_num, country.name_iso, country.common_name, country.comment, country.citizenship, country.entity, country.entity_code_iso_alfa2 FROM geo_object.country country LEFT JOIN geo_object.continent continent ON country.continent_id = continent.id WHERE country.erased=false AND continent.code ilike ';
+      var sql = 'SELECT country.id, country.code_iso_alfa2, country.code_iso_alfa3, country.code_iso_num, country.name_iso, country.common_name, country.comment, country.citizenship, country.phone_code, country.entity, country.entity_code_iso_alfa2 FROM geo_object.country country LEFT JOIN geo_object.continent continent ON country.continent_id = continent.id WHERE country.erased=false AND continent.code ilike ';
         sql += "'" + req.params.code + "'";
         sql += " ORDER BY common_name";
       var responseArray = [];
@@ -368,6 +369,7 @@ server.get(
               common_name: data.common_name,
               comment: data.comment,
               citizenship: data.citizenship,
+              phone_code: data.phone_code,
               entity: data.entity,
               entity_code_iso_alfa2: data.entity_code_iso_alfa2,
               name: data.name,
@@ -597,7 +599,7 @@ server.get(
             }
 
             //querying database
-            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, latitude, longitude, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND latitude=';
+            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, latitude, longitude, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND latitude=';
               sql += "'" + array[0] + "' AND longitude=";
               sql += "'" + array[1] + "'";
             console.log(sql);
@@ -625,6 +627,7 @@ server.get(
                 common_name: result.rows[0].common_name,
                 comment: result.rows[0].comment,
                 citizenship: result.rows[0].citizenship,
+                phone_code: result.rows[0].phone_code,
                 latitude: result.rows[0].latitude,
                 longitude: result.rows[0].longitude,
                 entity: result.rows[0].entity,
@@ -657,7 +660,7 @@ server.get(
             }
 
             //querying database
-            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
+            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
               sql += "'" + req.params[1] + "'";
               sql += " ORDER BY common_name";
             console.log(sql);
@@ -684,6 +687,7 @@ server.get(
                 common_name: result.rows[0].common_name,
                 comment: result.rows[0].comment,
                 citizenship: result.rows[0].citizenship,
+                phone_code: result.rows[0]. phone_code,
                 entity: result.rows[0].entity,
                 entity_code_iso_alfa2: result.rows[0].entity_code_iso_alfa2,
                 _links: {
