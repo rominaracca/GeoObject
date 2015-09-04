@@ -238,6 +238,7 @@ server.get(
                 code_iso_num: data.code_iso_num,
                 name_iso: data.name_iso,
                 common_name: data.common_name,
+		flag: 'http://'+config.host+':'+ config.port + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
                 comment: data.comment,
                 citizenship: data.citizenship,
                 phone_code: data.phone_code,
@@ -261,6 +262,11 @@ server.get(
         });
     });
 });
+
+/*GET flags.*/
+server.get(/\/flags\/?.*/, restify.serveStatic({
+  directory: __dirname
+}));
 
 
 /*GET country by code_iso_alfa3.*/
@@ -367,6 +373,7 @@ server.get(
               code_iso_num: data.code_iso_num,
               name_iso: data.name_iso,
               common_name: data.common_name,
+	      flag: 'http://'+config.host+':'+ config.port + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
               comment: data.comment,
               citizenship: data.citizenship,
               phone_code: data.phone_code,
@@ -625,6 +632,7 @@ server.get(
                 code_iso_num: result.rows[0].code_iso_num,
                 name_iso: result.rows[0].name_iso,
                 common_name: result.rows[0].common_name,
+		flag: 'http://'+config.host+':'+ config.port + "/flags/" + result.rows[0].code_iso_alfa3.toLowerCase() +".svg",
                 comment: result.rows[0].comment,
                 citizenship: result.rows[0].citizenship,
                 phone_code: result.rows[0].phone_code,
@@ -685,6 +693,7 @@ server.get(
                 code_iso_num: result.rows[0].code_iso_num,
                 name_iso: result.rows[0].name_iso,
                 common_name: result.rows[0].common_name,
+		flag: 'http://'+config.host+':'+ config.port + "/flags/" + result.rows[0].code_iso_alfa3.toLowerCase() +".svg",
                 comment: result.rows[0].comment,
                 citizenship: result.rows[0].citizenship,
                 phone_code: result.rows[0]. phone_code,
