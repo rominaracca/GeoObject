@@ -160,7 +160,7 @@ server.get(
       var sql = 'SELECT id, code, name, description, comment FROM geo_object.continent WHERE erased=false AND code ilike ';
         sql += "'" + req.params.code + "'";
         sql += " ORDER BY name";
-      console.log(sql);
+      //console.log(sql);
 
       client.query(sql, function(err, result) {
         done(); //release the pg client back to the pool 
@@ -373,7 +373,7 @@ server.get(
               code_iso_num: data.code_iso_num,
               name_iso: data.name_iso,
               common_name: data.common_name,
-	      flag: 'http://'+config.host+':'+ config.port + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
+              flag: 'http://'+config.host+':'+ config.port + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
               comment: data.comment,
               citizenship: data.citizenship,
               phone_code: data.phone_code,
@@ -478,7 +478,7 @@ server.get(
       //querying database
       var sql = 'SELECT id, code_iso, name, description, comment FROM geo_object.province WHERE erased=false AND code_iso ilike ';
         sql += "'" + req.params.code + "'";
-      console.log(sql);
+      //console.log(sql);
 
       client.query(sql, function(err, result) {
         done(); //release the pg client back to the pool 
@@ -609,7 +609,7 @@ server.get(
             var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, latitude, longitude, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND latitude=';
               sql += "'" + array[0] + "' AND longitude=";
               sql += "'" + array[1] + "'";
-            console.log(sql);
+            //console.log(sql);
 
             client.query(sql, function(err, result) {
               done(); //release the pg client back to the pool 
@@ -671,7 +671,7 @@ server.get(
             var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
               sql += "'" + req.params[1] + "'";
               sql += " ORDER BY common_name";
-            console.log(sql);
+            //console.log(sql);
 
             client.query(sql, function(err, result) {
               done(); //release the pg client back to the pool 
@@ -875,7 +875,7 @@ server.post(
               }
               sql += "'" + languagesArray[0] + "')";
 
-            console.log(sql);
+            //console.log(sql);
 
             client.query(sql, function(err, result) {
               done();
@@ -947,7 +947,7 @@ server.put(
           }
           sql = sql.substring(0, sql.length - 1);
             sql += " WHERE code='" + req.params.code + "'";
-        console.log(sql);
+        //console.log(sql);
 
         client.query(sql, function(err, result) {
           done();
